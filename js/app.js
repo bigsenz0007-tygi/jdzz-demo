@@ -546,7 +546,6 @@
     locAuthed: false,
     authOpen: false,
     jingangCat: "快递员",
-    jingangCustom: false,
     filterOn: {},
     /* 首页默认未筛选（不带 ·N） */
     fullFilterOn: {},
@@ -614,7 +613,7 @@
   }
 
   function applyNearVisual() {
-    apply(nearbyVisual(), { replace: true });
+    apply(nearbyVisual());
   }
 
   function applyLocVisual() {
@@ -622,7 +621,7 @@
     if (id === "address-search" && state.locQuery.trim() === "朝阳" && state.addrSel < 0) {
       state.addrSel = 2; /* 对齐稿：北票市-朝阳 勾选 */
     }
-    apply(id, { replace: true });
+    apply(id);
   }
 
   function currentLocLabel() {
@@ -802,11 +801,9 @@
     return filtered.slice().sort((a, b) => publishAge(a.fresh) - publishAge(b.fresh));
   }
 
-  function jobCardsHtml(list, top, layerClass) {
+  function jobCardsHtml(list, layerClass) {
     const latest = state.homeSort === "latest";
-    const cls = layerClass ? `job-layer ${layerClass}` : "job-layer";
-    const topStyle = layerClass ? "" : ` style="top:${top || 0}px"`;
-    return `<div class="${cls}"${topStyle}>${list
+    return `<div class="job-layer ${layerClass}">${list
       .map((j) => {
         const left = latest
           ? `<span class="job-meta-item is-time">${j.fresh || "刚刚更新"}</span>`
@@ -913,7 +910,6 @@
     }
     if (id === "jingang") {
       /* 始终用数据卡片，避免 PNG 列表与 data-job 错位 */
-      state.jingangCustom = true;
       if (!state.jingangCat) state.jingangCat = "快递员";
       /* 从首页金刚位点进来：筛选默认未选（不带 ·N） */
       if (state.page === "home") state.fullFilterOn = {};
@@ -970,7 +966,6 @@
     const jobs = cat && JOB_MAP[cat];
     if (cat && jobs && jobs.length) {
       state.jingangCat = cat;
-      state.jingangCustom = true;
       go("jingang");
       return;
     }
@@ -981,7 +976,7 @@
     apply("search");
   }
 
-  function apply(id, opts) {
+  function apply(id) {
     const i = PAGES.findIndex((p) => p.id === id);
     if (i < 0) return;
     state.page = id;
@@ -990,15 +985,6 @@
   }
 
   function act(name) {
-    if (name === "loc-reset") {
-      state.locQuery = "";
-      state.locSearching = false;
-      state.addrSel = -1;
-      state.city = { p: 2, c: 1, d: 2 };
-      state.focus = "loc";
-      apply("location", { replace: true });
-      return;
-    }
     if (name === "loc-search-focus") {
       state.locSearching = true;
       state.locQuery = "";
@@ -1019,7 +1005,7 @@
       state.locSearching = false;
       state.addrSel = -1;
       state.focus = "";
-      apply("location", { replace: true });
+      apply("location");
       return;
     }
     if (name === "loc-ok") {
@@ -1217,7 +1203,7 @@
         return;
       }
       if (state.page === "filter-scroll" || state.page === "filter-scroll-near") {
-        apply("filter-scroll", { replace: true });
+        apply("filter-scroll");
         return;
       }
       render();
@@ -1240,7 +1226,7 @@
       state.homeSort = "nearby";
       state.authOpen = false;
       if (state.page === "filter-scroll" || state.page === "filter-scroll-near") {
-        apply("filter-scroll-near", { replace: true });
+        apply("filter-scroll-near");
         return;
       }
       render();
@@ -1454,7 +1440,6 @@
   function fullFilterCount() {
     return Object.keys(state.fullFilterOn).filter((key) => {
       if (!state.fullFilterOn[key]) return false;
-      if (key === "hiddenPosition") return true;
       return !/^(fc|ft|fs|fw|fe|fq|fo)0$/.test(key);
     }).length;
   }
@@ -1469,20 +1454,8 @@
     { label: "作业要求", id: "fo" },
   ];
 
-  /** 滚动联动：右侧分区顺序 */
-  const FILTER_SCROLL_SECTIONS = [
-    { id: "fc", label: "职位类别" },
-    { id: "ft", label: "职位类型" },
-    { id: "fs", label: "薪资范围" },
-    { id: "fw", label: "福利待遇" },
-    { id: "fe", label: "经验要求" },
-    { id: "fq", label: "资质要求" },
-    { id: "fo", label: "作业要求" },
-  ];
-
   /** 左侧 +n：只计具体选项，不含「不限」 */
   function fullFilterSideCount(id) {
-    if (id === "hiddenPosition") return state.fullFilterOn.hiddenPosition ? 1 : 0;
     return Object.keys(state.fullFilterOn).filter(
       (key) => key.startsWith(id) && state.fullFilterOn[key] && key.slice(id.length) !== "0"
     ).length;
@@ -1517,8 +1490,6 @@
 
   function syncFilterSideByScroll(scroller) {
     if (!scroller || state.filterSideLock) return;
-    /* 岗位分类无独立面板：滚动时不抢回高亮 */
-    if (state.filterSideId === "hiddenPosition") return;
     const panels = Array.from(scroller.querySelectorAll("[data-filter-panel]"));
     if (!panels.length) return;
     const top = scroller.scrollTop + 24;
@@ -1962,7 +1933,6 @@
         }
         if (el.dataset.cat) {
           state.jingangCat = el.dataset.cat;
-          state.jingangCustom = true;
           state.jobKey = CAT_TO_JOB_KEY[el.dataset.cat] || "";
         }
         if (el.dataset.job) {
@@ -2128,12 +2098,10 @@
         state.filterSideLock = true;
         scrollFilterToAnchor(scroller, anchor);
         clearTimeout(state._filterSideTimer);
-        /* 岗位分类无面板：保持选中更久，避免滚动回弹抢走高亮 */
-        const hold = side === "hiddenPosition" ? 800 : 480;
         state._filterSideTimer = setTimeout(() => {
           state.filterSideLock = false;
-          if (side !== "hiddenPosition") syncFilterSideByScroll(scroller);
-        }, hold);
+          syncFilterSideByScroll(scroller);
+        }, 480);
       });
     });
     root.querySelectorAll("[data-nmode]").forEach((el) => {
@@ -2234,7 +2202,7 @@
     const scrolled = state.homeScrolled ? " is-scrolled" : "";
     const auth = authLayerHtml();
     /* 列表改数据卡片：完整卡片 + 固定 8px 间距，避免 PNG 切割感 */
-    const cards = jobCardsHtml(homeJobs(), 0, "home-cards");
+    const cards = jobCardsHtml(homeJobs(), "home-cards");
     return `<div class="home-shell${scrolled}">
       <div class="home-pin" id="home-pin">
         <img src="assets/screens/${pinPrefix}-top.png?v=1015j" width="375" height="192" alt="首页上滑顶栏" />
@@ -2358,7 +2326,7 @@
       <span class="jg-sort-grow"></span>
       <button type="button" class="jg-sort-side filter${filterOn}" data-go="filter-salary" aria-label="${filterLabel}">${filterLabel}</button>
     </div>`;
-    const cards = jobCardsHtml(jobsForCat(state.jingangCat), 0, "jg-cards");
+    const cards = jobCardsHtml(jobsForCat(state.jingangCat), "jg-cards");
     return `<div class="list-shell">
       <div class="list-top">
         <img src="assets/screens/${top}?v=1015v" width="375" height="188" alt="职位列表顶栏" />

@@ -21,7 +21,6 @@
   --search-pad-x: 12px;
   --search-gap: 4px;
   --search-bg: #f5f5f6;
-  --search-bg-white: #ffffff;
   --search-icon: 16px;
   --search-text: #23252b;
   --search-placeholder: #babec7;
@@ -241,13 +240,6 @@ img {
 .home-list-inner {
   position: relative;
   width: 375px;
-}
-
-.home-list-inner > img {
-  width: 375px;
-  height: auto;
-  pointer-events: none;
-  display: block;
 }
 
 /* 上滑吸顶：对齐 78:174368 / 78:174586（无金刚位） */
@@ -490,10 +482,6 @@ img {
   border-radius: 12px 12px 0 0;
 }
 
-.home-pin-sort {
-  display: none;
-}
-
 .home-pin-grow {
   flex: 1;
   min-width: 8px;
@@ -578,13 +566,6 @@ img {
   background: #f6f6f6;
 }
 
-.list-scroll img {
-  width: 375px;
-  height: auto;
-  pointer-events: none;
-  display: block;
-}
-
 .hotspot {
   position: absolute;
   z-index: 4;
@@ -594,13 +575,6 @@ img {
 
 .auth-layer .hotspot {
   z-index: 21;
-}
-
-body.show-hotspots .hotspot {
-  outline: 1px solid rgba(252, 55, 55, 0.55);
-  background: rgba(252, 55, 55, 0.08);
-  font-size: 0;
-  color: transparent;
 }
 
 .fig-mask {
@@ -616,11 +590,6 @@ body.show-hotspots .hotspot {
   overflow: hidden;
   cursor: text;
   box-sizing: border-box;
-}
-
-.fig-mask.white {
-  background: var(--search-bg-white);
-  border: 0.5px solid rgba(186, 190, 199, 0.45);
 }
 
 .fig-icon {
@@ -1462,13 +1431,6 @@ body.show-hotspots .hotspot {
   margin: 0;
 }
 
-.filter-panel-anchor {
-  height: 0;
-  gap: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
 /* 标题 16 Semibold #232930 + （可多选）14 Regular #868d9f，行高 32 */
 .filter-panel-title {
   margin: 0;
@@ -1580,11 +1542,6 @@ body.show-hotspots .hotspot {
   font-weight: 400;
   line-height: 44px;
   text-align: left;
-}
-
-.chip-layer {
-  position: absolute;
-  z-index: 5;
 }
 
 .chip {
@@ -2023,10 +1980,6 @@ body.show-hotspots .hotspot {
   text-align: center;
 }
 
-.search-hist-mask {
-  display: none;
-}
-
 .pick-value {
   position: absolute;
   z-index: 6;
@@ -2078,77 +2031,6 @@ body.show-hotspots .hotspot {
   padding: 0 10px 12px;
   background: #f6f6f6;
   overflow-y: auto;
-}
-
-.sort-bar {
-  position: absolute;
-  left: 10px;
-  top: 302px;
-  width: 200px;
-  height: 48px;
-  z-index: 8;
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 0 12px;
-  background: #fff;
-  border-radius: 8px 0 0 0;
-}
-
-.sort-bar.jingang {
-  left: 12px;
-  top: 136px;
-  width: 236px;
-  height: 40px;
-  padding: 4px 0 0;
-  background: #ffffff;
-  border-radius: 0;
-  gap: 8px;
-}
-
-.sort-tab {
-  position: relative;
-  height: 48px;
-  font-size: 14px;
-  color: #23252b;
-  line-height: 48px;
-}
-
-.sort-bar.jingang .sort-tab {
-  height: 32px;
-  line-height: 32px;
-  padding: 0 12px;
-  border-radius: 6px;
-  background: #f6f6f6;
-  font-size: 14px;
-  font-weight: 400;
-  color: #23252b;
-}
-
-.sort-tab.on {
-  color: #fc3737;
-  font-weight: 600;
-}
-
-.sort-tab.on::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: 8px;
-  width: 16px;
-  height: 3px;
-  margin-left: -8px;
-  border-radius: 2px;
-  background: #fc3737;
-}
-
-.sort-bar.jingang .sort-tab.on {
-  background: #ffefef;
-  color: #fc3737;
-}
-
-.sort-bar.jingang .sort-tab.on::after {
-  display: none;
 }
 
 .auth-layer {
@@ -2539,10 +2421,6 @@ body.show-hotspots .hotspot {
   padding: 14px 0 34px;
 }
 
-.apply-progress-label {
-  display: none;
-}
-
 /* 报名结果底栏：盖住叠字底图，双按钮等宽 + 12px 间距 */
 .apply-success-bar {
   position: absolute;
@@ -2894,10 +2772,6 @@ body.show-hotspots .hotspot {
 
 .ap-history-status.fail {
   color: #fc3737;
-}
-
-.ap-history-status.pending {
-  color: #3c6ef0;
 }
 
 .ap-history-status.muted {
