@@ -2836,7 +2836,8 @@ img {
   align-items: center;
   justify-content: flex-start;
   gap: 2px;
-  padding: 8px 12px 12px;
+  /* 与左上角关闭图标左缘对齐（稿面 close left=16） */
+  padding: 8px 12px 12px 16px;
   box-sizing: border-box;
   font-family: "PingFang SC", "PingFangSC-Regular", sans-serif;
   font-size: 16px;
