@@ -427,7 +427,6 @@
     nearby: [
       { l: 0, t: 44, w: 56, h: 44, go: "back", title: "返回" },
       { l: 290, t: 96, w: 76, h: 32, go: "nearby-loc", title: "修改定位" },
-      { l: 300, t: 458, w: 72, h: 32, go: "filter-salary", title: "筛选" },
       { l: 12, t: 494, w: 351, h: 134, go: "detail-logistics", title: "职位", job: "courier" },
       { l: 288, t: 584, w: 72, h: 34, go: "detail-logistics", title: "去报名", job: "courier" },
       { l: 12, t: 636, w: 351, h: 136, go: "detail-logistics", title: "职位", job: "install" },
@@ -437,7 +436,6 @@
     "nearby-time": [
       { l: 0, t: 44, w: 56, h: 44, go: "back", title: "返回" },
       { l: 290, t: 96, w: 76, h: 32, go: "nearby-loc", title: "修改定位" },
-      { l: 300, t: 458, w: 72, h: 32, go: "filter-salary", title: "筛选" },
       { l: 12, t: 494, w: 351, h: 134, go: "detail-logistics", title: "职位", job: "courier" },
       { l: 288, t: 584, w: 72, h: 34, go: "detail-logistics", title: "去报名", job: "courier" },
       { l: 12, t: 636, w: 351, h: 136, go: "detail-logistics", title: "职位", job: "install" },
@@ -1966,7 +1964,8 @@
           : `<div class="near-map-sim" aria-hidden="true">
               <img src="assets/screens/nearby-map-base.png?v=1017e" alt="" style="--near-map-scale:${mapScale.toFixed(3)}" />
             </div>
-            <div class="near-result-count" aria-live="polite">共${resultCount}个职位</div>`;
+            <div class="near-result-count" aria-live="polite">共${resultCount}个职位</div>
+            <div class="near-filter-hide" aria-hidden="true"></div>`;
       /* 文案统一：距离 xm / 步行 x分钟 / 电动 x分钟 / 公交 x分钟（中间空格）；图标与报名按钮位置四态一致 */
       const travelLabels = ["距离", "步行", "电动", "公交"];
       const distSamples = ["50m", "100m", "200m", "300m", "500m"];
