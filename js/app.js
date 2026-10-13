@@ -1472,7 +1472,7 @@
 
   function shotLayer(file, hits) {
     return `<div class="auth-layer">
-      <img src="assets/screens/${file}?v=1016j" width="375" height="812" alt="" />
+      <img src="assets/screens/${file}?v=1016p" width="375" height="812" alt="" />
       ${hits}
     </div>`;
   }
@@ -1830,6 +1830,15 @@
               <img src="assets/screens/nearby-map-base.png?v=1014w" alt="" style="--near-map-scale:${mapScale.toFixed(3)}" />
             </div>
             <div class="near-result-count" aria-live="polite">共${resultCount}个职位</div>`;
+      const cardTimes =
+        timeMode && pageId !== "nearby-empty"
+          ? [598, 742, 886]
+              .map(
+                (top) =>
+                  `<span class="near-card-time" style="top:${top}px">${dists[state.nearDist]}</span>`
+              )
+              .join("")
+          : "";
       const tip =
         state.nearTip && !timeMode && pageId !== "nearby-empty"
           ? `<div class="near-tip" role="status">
@@ -1838,7 +1847,7 @@
               <button type="button" class="near-tip-x" data-act="near-tip-close" aria-label="关闭"></button>
             </div>`
           : "";
-      return `${selectedLocation}${resultSimulation}<div class="near-panel${live}${timeMode ? " times" : ""}">
+      return `${selectedLocation}${resultSimulation}${cardTimes}<div class="near-panel${live}${timeMode ? " times" : ""}">
         <div class="near-row modes">${modes
           .map(
             (t, i) =>
@@ -2477,11 +2486,11 @@
               : img === "nearby-map-base.png"
                 ? "1014w"
                 : img === "onboard.png"
-                  ? "1015o"
+                  ? "1016r"
                   : img === "mine.png"
                     ? "1016l"
                     : img === "detail-dada-apply.png" || img === "detail-group.png"
-                      ? "1015y"
+                      ? "1016p"
                       : img === "resume-need.png"
                         ? "1016j"
                       : img === "detail-logistics.png"
