@@ -312,7 +312,6 @@
         "晋升通道完善",
         "带薪年假",
         "专业培训",
-        "专业培训",
         "就近派单",
         "工单充足",
         "时间灵活",
@@ -480,6 +479,7 @@
     resume: [
       { l: 0, t: 44, w: 56, h: 44, go: "back", title: "返回" },
       { l: 240, t: 186, w: 100, h: 40, act: "resume-scan", title: "去识别" },
+      { l: 12, t: 508, w: 351, h: 44, act: "resume-rel-open", title: "紧急联系人关系" },
       { l: 16, t: 726, w: 343, h: 44, act: "resume-save", title: "保存简历" },
     ],
     "id-error": [
@@ -511,8 +511,7 @@
     ],
     onboard: [
       { l: 0, t: 44, w: 56, h: 44, act: "to-home", title: "返回" },
-      { l: 16, t: 718, w: 166, h: 48, act: "onboard-refresh", title: "刷新" },
-      { l: 194, t: 718, w: 165, h: 48, act: "to-home", title: "返回首页" },
+      /* 底栏与文案改由 .onboard-* 苹方自绘承接 */
     ],
     mine: [
       { l: 12, t: 184, w: 351, h: 52, go: "broker", title: "经纪人" },
@@ -538,8 +537,8 @@
     locQuery: "",
     locSearching: false,
     addrSel: -1,
-    /* 对齐稿 78:175060：贵州 / 贵阳 / 云岩区 */
-    city: { p: 2, c: 1, d: 2 },
+    /* 默认：北京 / 北京市 / 朝阳区（与 DETECTED_DISTRICT 一致） */
+    city: { p: 6, c: 1, d: 0 },
     locLabel: "全国",
     jobLocLabel: "",
     homeSort: "latest",
@@ -571,6 +570,7 @@
     brokerReg: false,
     idSheet: "",
     resumeScan: false,
+    resumeRelSheet: false,
     resumeCam: false,
     resumeReady: false,
     resumeGate: false,
@@ -632,6 +632,41 @@
     if (!c) return p.n;
     if (!c.dists || !c.dists.length) return c.n || p.n;
     return c.dists[state.city.d] || c.n;
+  }
+
+  /* 按当前位置文案回填省市区列（如朝阳区 → 北京 / 北京市 / 朝阳区） */
+  function syncCityFromLabel(label) {
+    const raw = String(label || "").trim();
+    if (!raw || raw === "全国") {
+      state.city = { p: 0, c: 0, d: 0 };
+      return;
+    }
+    const tip = raw.split(/\s+/).pop();
+    for (let pi = 0; pi < CITY_DATA.length; pi++) {
+      const cities = CITY_DATA[pi].cities || [];
+      for (let ci = 0; ci < cities.length; ci++) {
+        const dists = cities[ci].dists || [];
+        const di = dists.indexOf(tip);
+        if (di >= 0) {
+          state.city = { p: pi, c: ci, d: di };
+          return;
+        }
+      }
+    }
+    for (let pi = 0; pi < CITY_DATA.length; pi++) {
+      const cities = CITY_DATA[pi].cities || [];
+      for (let ci = 0; ci < cities.length; ci++) {
+        const n = cities[ci].n || "";
+        if (n === tip || n === tip.replace(/市$/, "") || tip === n + "市") {
+          state.city = { p: pi, c: ci, d: 0 };
+          return;
+        }
+      }
+      if (CITY_DATA[pi].n === tip || CITY_DATA[pi].n.indexOf(tip) === 0) {
+        state.city = { p: pi, c: 0, d: 0 };
+        return;
+      }
+    }
   }
 
   function locationFromCity() {
@@ -696,14 +731,22 @@
 
   function jobMatchesFilters(job) {
     const detail = JOB_DETAIL[jobKeyFor(job)];
-    const text = [job.title, job.site]
-      .concat(job.tags || [], detail ? detail.quals || [] : [])
+    const text = [job.title, job.site, job.key || ""]
+      .concat(job.tags || [], detail ? detail.tags || [] : [], detail ? detail.quals || [] : [])
       .join(" ");
+    const typeWords = ["全职", "兼职", "临时工", "日结", "实习", "人才储备"];
+    const licenseWords = ["A1本", "A2本", "B1本", "B2本", "C1本", "C本", "D本", "驾照", "驾驶证"];
+    const opWords = ["叉车本", "电工本", "叉车", "电工"];
+
     const categories = selectedFullOptions("fc");
     if (categories.length && !categories.some((item) => text.includes(item))) return false;
 
+    /* 职位类型：多数职位未标类型，未标明时不因该项空窗 */
     const types = selectedFullOptions("ft");
-    if (types.length && !types.some((item) => text.includes(item))) return false;
+    if (types.length) {
+      const marked = typeWords.filter((w) => text.includes(w));
+      if (marked.length && !types.some((item) => marked.includes(item))) return false;
+    }
 
     const fullSalary = selectedFullOptions("fs");
     const fullSalaryMatch = {
@@ -724,27 +767,42 @@
     const welfare = selectedFullOptions("fw");
     if (welfare.length && !welfare.some((item) => text.includes(item))) return false;
 
+    /* 经验：职位未写经验/军人时不硬过滤 */
     const experience = selectedFullOptions("fe");
-    if (
-      experience.length &&
-      !experience.some((item) =>
-        item === "有经验优先" ? /经验.*优先/.test(text) : text.includes(item)
+    if (experience.length) {
+      const hasExpSignal = /经验|军人/.test(text);
+      if (
+        hasExpSignal &&
+        !experience.some((item) =>
+          item === "有经验优先" ? /经验/.test(text) : text.includes(item)
+        )
       )
-    )
-      return false;
+        return false;
+    }
 
+    /* 资质：仅职位提到驾照/证本时硬过滤；C1本 兼容「要求C本」 */
     const qualifications = selectedFullOptions("fq");
-    if (
-      qualifications.length &&
-      !qualifications.some((item) => {
-        const normalized = item.replace(/[0-9]/g, "");
-        return text.includes(item) || (normalized && text.includes(`要求${normalized}本`));
-      })
-    )
-      return false;
+    if (qualifications.length) {
+      const hasLicenseSignal = licenseWords.some((w) => text.includes(w));
+      if (
+        hasLicenseSignal &&
+        !qualifications.some((item) => {
+          const base = String(item).replace(/本$/, "").replace(/[0-9]/g, "");
+          return (
+            text.includes(item) ||
+            (base && (text.includes(base + "本") || text.includes("要求" + base + "本")))
+          );
+        })
+      )
+        return false;
+    }
 
+    /* 作业：未提及叉车/电工时不硬过滤 */
     const operations = selectedFullOptions("fo");
-    if (operations.length && !operations.some((item) => text.includes(item))) return false;
+    if (operations.length) {
+      const hasOpSignal = opWords.some((w) => text.includes(w));
+      if (hasOpSignal && !operations.some((item) => text.includes(item))) return false;
+    }
 
     const simpleSalary = {
       s1: [0, 3000],
@@ -859,7 +917,7 @@
           <span class="job-meta">${left}<span class="job-meta-item is-loc">${currentJobLocation(j.loc)}</span></span>
           <button type="button" class="job-apply" data-go="detail-logistics" data-job="${key}" data-job-info="${info}">去报名</button>
         </div>
-      </div>`;
+    </div>`;
       })
       .join("")}</div>`;
   }
@@ -923,10 +981,12 @@
       state.locSearching = false;
       state.focus = "";
       if (fromNav) state.locQuery = "";
+      syncCityFromLabel(state.locLabel || "全国");
     }
     if (id === "loc-focus") {
       state.locSearching = true;
       state.focus = "loc";
+      syncCityFromLabel(state.locLabel || "全国");
     }
     if (id === "address-search") {
       state.locSearching = true;
@@ -976,6 +1036,7 @@
     }
     if (id === "resume") {
       state.resumeScan = false;
+      state.resumeRelSheet = false;
       state.resumeCam = false;
     }
   }
@@ -1032,10 +1093,6 @@
       return;
     }
     if (name === "loc-pick") {
-      /* 离开稿面默认选中，叠出可滚动交互列 */
-      if (state.city.p === 2 && state.city.c === 1 && state.city.d === 2) {
-        state.city = { p: 2, c: 1, d: 1 };
-      }
       render();
       return;
     }
@@ -1189,6 +1246,7 @@
     }
     if (name === "resume-scan") {
       state.resumeScan = true;
+      state.resumeRelSheet = false;
       state.resumeCam = false;
       render();
       return;
@@ -1196,6 +1254,23 @@
     if (name === "resume-scan-close") {
       state.resumeScan = false;
       state.resumeCam = false;
+      render();
+      return;
+    }
+    if (name === "resume-rel-open") {
+      state.resumeRelSheet = true;
+      state.resumeScan = false;
+      state.resumeCam = false;
+      render();
+      return;
+    }
+    if (name === "resume-rel-close") {
+      state.resumeRelSheet = false;
+      render();
+      return;
+    }
+    if (name === "resume-rel-pick") {
+      state.resumeRelSheet = false;
       render();
       return;
     }
@@ -1266,6 +1341,7 @@
         return;
       }
       state.locLabel = state.locLabel && state.locLabel !== "全国" ? state.locLabel : DETECTED_DISTRICT;
+      syncCityFromLabel(state.locLabel);
       state.homeSort = "nearby";
       state.authOpen = false;
       if (state.page === "filter-scroll" || state.page === "filter-scroll-near") {
@@ -1279,6 +1355,7 @@
       state.locAuthed = true;
       state.authOpen = false;
       state.locLabel = DETECTED_DISTRICT;
+      syncCityFromLabel(state.locLabel);
       state.jobLocLabel = `北京市 ${DETECTED_DISTRICT}`;
       state.homeSort = "nearby";
       render();
@@ -1450,35 +1527,57 @@
         <div class="df-hr-text">
           <div class="df-hr">${j.hr}</div>
           <div class="df-hrsub">${j.hrSub}</div>
-        </div>
+      </div>
         <button type="button" class="df-call" data-act="call-hr" aria-label="电话">电话</button>
       </div>
       <div class="df-body">
-        <div class="df-separator"></div>
         <section class="df-section">
           <h2>工作内容</h2>
           <div class="df-copy">${duties}</div>
         </section>
-        <div class="df-separator"></div>
         <section class="df-section">
           <h2>任职资格</h2>
           <div class="df-copy">${quals}</div>
         </section>
-        ${showLocation ? `<div class="df-separator"></div>
-        <img class="df-location-tail" src="assets/screens/detail-location-tail.png?v=1013s" width="375" height="258" alt="位置信息" />` : ""}
-      </div>
+        ${showLocation ? `<img class="df-location-tail" src="assets/screens/detail-location-tail.png?v=1013s" width="375" height="258" alt="位置信息" />` : ""}
+        </div>
     </div>`;
   }
 
   function shotLayer(file, hits) {
     return `<div class="auth-layer">
-      <img src="assets/screens/${file}?v=1016p" width="375" height="812" alt="" />
+      <img src="assets/screens/${file}?v=${file === "resume-need.png" ? "1017d" : "1016p"}" width="375" height="812" alt="" />
       ${hits}
     </div>`;
   }
 
   function shotHit(l, t, w, h, act, label) {
     return `<button type="button" class="hotspot auth-hit" style="left:${l}px;top:${t}px;width:${w}px;height:${h}px" data-act="${act}" aria-label="${label}"></button>`;
+  }
+
+  /** 底栏选项弹层：对齐图2（标题可选 / 列表项 / 独立取消按钮） */
+  function actionSheetHtml({ title, items, cancelAct, cancelLabel }) {
+    const head = title
+      ? `<div class="action-sheet-title">${title}</div>`
+      : "";
+    const list = (items || [])
+      .map(
+        (item) =>
+          `<button type="button" class="action-sheet-item" data-act="${item.act}"${
+            item.rel ? ` data-rel="${item.rel}"` : ""
+          }>${item.label}</button>`
+      )
+      .join("");
+    return `<div class="action-sheet" role="dialog" aria-label="${title || "选项弹层"}">
+      <button type="button" class="action-sheet-mask" data-act="${cancelAct}" aria-label="关闭"></button>
+      <div class="action-sheet-panel">
+        ${head}
+        <div class="action-sheet-list">${list}</div>
+        <button type="button" class="action-sheet-cancel" data-act="${cancelAct}">${
+          cancelLabel || "取消"
+        }</button>
+      </div>
+    </div>`;
   }
 
   /** 已选数量：不含各组「不限」 */
@@ -1583,7 +1682,7 @@
         <div class="filter-body filter-body-live">
           ${fullFilterPanelsHtml()}
           <div class="filter-body-pad"></div>
-        </div>
+      </div>
       </div>
       <div class="filter-sticky full">
         <button type="button" class="filter-reset" data-act="filter-reset" title="重置" aria-label="重置">重置</button>
@@ -1600,7 +1699,7 @@
       ["入职失败", "muted"],
     ];
     const historyCards = history
-      .map(
+              .map(
         ([status, cls]) => `<article class="ap-history-card">
           <h3>北京市-北京摆渡车队-运输司机</h3>
           <span class="ap-history-status ${cls}">${status}</span>
@@ -1615,7 +1714,7 @@
         <button type="button" class="ap-back" data-go="back" aria-label="返回"></button>
         <h1>应聘记录</h1>
         <span class="ap-mini" aria-hidden="true"></span>
-      </div>
+          </div>
       <main>
         <h2 class="ap-section-title current">当前应聘进度</h2>
         <section class="ap-current-card">
@@ -1628,7 +1727,7 @@
             <div class="ap-step active"><b>3</b><strong>业务面试</strong><span>进行中</span></div>
             <i></i>
             <div class="ap-step"><b>4</b><strong>入职</strong><span>未开始</span></div>
-          </div>
+        </div>
           <button type="button" class="ap-interview" data-go="home">开始面试</button>
         </section>
         <h2 class="ap-section-title history">历史报名 <small>· 10</small></h2>
@@ -1649,20 +1748,54 @@
         <div class="auth-dialog-actions">
           <button type="button" class="auth-btn cancel" data-act="auth-cancel">取消</button>
           <button type="button" class="auth-btn ok" data-act="auth-ok">授权</button>
-        </div>
       </div>
+          </div>
     </div>`;
+  }
+
+  function tabBarHtml(active) {
+    const items = [
+      { key: "find", label: "找工作", attr: 'data-act="to-home"' },
+      { key: "friend", label: "推好友", attr: 'data-go="broker"' },
+      { key: "onboard", label: "办入职", attr: 'data-go="onboard"' },
+      { key: "mine", label: "我的", attr: 'data-go="mine"' },
+    ];
+    return `<nav class="app-tabbar" aria-label="底部导航">
+      <div class="app-tabbar-menu">
+        ${items
+          .map(
+            (item) => `<button type="button" class="app-tab-item${item.key === active ? " active" : ""}" ${item.attr}>
+              <span class="app-tab-icon is-${item.key}" aria-hidden="true"></span>
+              <span class="app-tab-label">${item.label}</span>
+            </button>`
+          )
+          .join("")}
+      </div>
+      <span class="app-tab-home-indicator" aria-hidden="true"></span>
+    </nav>`;
   }
 
   function overlays(pageId) {
     if (pageId === "application-progress") return applicationProgressHtml();
+    if (pageId === "onboard") {
+      /* 盖住稿面非苹方字：顶栏标题 + 空态文案 + 底栏按钮 */
+      return `<div class="onboard-nav-title">入职办理</div>
+        <div class="onboard-copy">
+          <h2 class="onboard-copy__title">暂时无法办理入职哦～</h2>
+          <p class="onboard-copy__desc">您的面试、试岗环节尚未完成，或入职的部门信息正在确认中，请稍后再来处理入职事项哦～如有问题可联系招聘人员。</p>
+        </div>
+        <div class="onboard-bar">
+          <button type="button" class="onboard-btn ghost" data-act="onboard-refresh">刷新</button>
+          <button type="button" class="onboard-btn primary" data-act="to-home">返回首页</button>
+        </div>`;
+    }
     if (pageId === "apply-success") {
       /* 底图双按钮叠在一起，自绘底栏覆盖并对齐间距 */
       return `<div class="apply-success-bar">
         <button type="button" class="apply-success-btn ghost" data-act="to-home">返回首页</button>
         <button type="button" class="apply-success-btn primary" data-go="application-progress">报名进度</button>
-      </div>`;
-    }
+    </div>`;
+  }
     if (pageId === "filter-full" || pageId === "filter-salary") return "";
     if (pageId === "filter-scroll" || pageId === "filter-scroll-near") {
       const n = fullFilterCount();
@@ -1688,10 +1821,10 @@
       if (searching && !emptyMiss) {
         html += `<button type="button" class="loc-cancel" data-act="loc-cancel" title="取消">取消</button>`;
       }
-      /* 切图已有定位针和「当前位置：朝阳区」。只在地名不同时盖住地名，不再整行重画 */
+      /* 盖住切图左对齐行，整行「当前位置：xxx」横向居中 */
       if (pageId === "location" || pageId === "loc-focus") {
         const label = state.locLabel || "全国";
-        if (label !== "朝阳区") html += `<div class="loc-current">${label}</div>`;
+        html += `<div class="loc-current"><i class="loc-current-pin" aria-hidden="true"></i>当前位置：${escHtml(label)}</div>`;
         html += pickerHtml();
       }
       if (pageId === "address-search") {
@@ -1742,10 +1875,10 @@
         pageId === "detail-logistics" && state.resumeGate
           ? shotLayer(
               "resume-need.png",
-              shotHit(0, 0, 375, 460, "resume-gate-close", "关闭") +
-                shotHit(0, 520, 375, 292, "resume-gate-close", "关闭") +
-                shotHit(72, 470, 110, 40, "resume-gate-close", "取消") +
-                shotHit(194, 470, 114, 40, "resume-go", "去完善")
+              shotHit(0, 0, 375, 450, "resume-gate-close", "关闭") +
+                shotHit(0, 510, 375, 302, "resume-gate-close", "关闭") +
+                shotHit(72, 462, 110, 40, "resume-gate-close", "取消") +
+                shotHit(194, 462, 110, 40, "resume-go", "去完善")
             )
           : "";
       return `<div class="detail-sticky${fav}">
@@ -1806,15 +1939,19 @@
         </button>
       </div>`;
       const timeMode = state.nearMode > 0;
-      /* 对齐图1/图2：分钟标签单行 10/15/20/30 */
+      const timeOptions = {
+        1: ["10分钟", "15分钟", "20分钟", "30分钟"],
+        2: ["10分钟", "15分钟", "20分钟", "30分钟", "40分钟"],
+        3: ["10分钟", "20分钟", "30分钟", "40分钟", "60分钟"],
+      };
       const dists = timeMode
-        ? ["10分钟", "15分钟", "20分钟", "30分钟"]
+        ? timeOptions[state.nearMode]
         : ["500米", "1公里", "2公里", "3公里", "5公里"];
       const countSets = [
         [18, 36, 64, 91, 148],
         [18, 27, 39, 74],
-        [31, 48, 72, 135],
-        [26, 43, 66, 128],
+        [31, 48, 72, 102, 135],
+        [26, 43, 66, 94, 128],
       ];
       if (state.nearDist >= dists.length) state.nearDist = 0;
       const resultCount = countSets[state.nearMode][state.nearDist] || 18;
@@ -1827,15 +1964,26 @@
         pageId === "nearby-empty"
           ? ""
           : `<div class="near-map-sim" aria-hidden="true">
-              <img src="assets/screens/nearby-map-base.png?v=1014w" alt="" style="--near-map-scale:${mapScale.toFixed(3)}" />
+              <img src="assets/screens/nearby-map-base.png?v=1017e" alt="" style="--near-map-scale:${mapScale.toFixed(3)}" />
             </div>
             <div class="near-result-count" aria-live="polite">共${resultCount}个职位</div>`;
+      /* 文案统一：距离 xm / 步行 x分钟 / 电动 x分钟 / 公交 x分钟（中间空格）；图标与报名按钮位置四态一致 */
+      const travelLabels = ["距离", "步行", "电动", "公交"];
+      const distSamples = ["50m", "100m", "200m", "300m", "500m"];
+      const travelText =
+        state.nearMode === 0
+          ? `距离 ${distSamples[state.nearDist] || "50m"}`
+          : `${travelLabels[state.nearMode]} ${dists[state.nearDist]}`;
+      const metaKind = state.nearMode === 0 ? "is-dist" : "is-time";
       const cardTimes =
-        timeMode && pageId !== "nearby-empty"
+        pageId !== "nearby-empty"
           ? [598, 742, 886]
               .map(
                 (top) =>
-                  `<span class="near-card-time" style="top:${top}px">${dists[state.nearDist]}</span>`
+                  `<span class="near-card-meta" style="top:${top}px">
+                    <span class="near-card-meta-item ${metaKind}">${travelText}</span>
+                    <span class="near-card-meta-item is-loc">北京市 通州区</span>
+                  </span>`
               )
               .join("")
           : "";
@@ -1854,7 +2002,7 @@
               `<button type="button" class="near-mode ${i === state.nearMode ? "on" : ""}" data-nmode="${i}" aria-label="${t}">${t}</button>`
           )
           .join("")}</div>
-        <div class="near-row ${timeMode ? "times" : "dists"}">${dists
+        <div class="near-row ${timeMode ? `times${dists.length === 5 ? " count-5" : ""}` : "dists"}">${dists
           .map(
             (t, i) =>
               `<button type="button" class="near-dist ${i === state.nearDist ? "on" : ""}" data-ndist="${i}" aria-label="${t}">${t}</button>`
@@ -1890,11 +2038,14 @@
             )
             .join("")
         : `<div class="near-addr-empty"><span>未找到相关位置</span></div>`;
-      return `${mask}<div class="near-addr-list${rows.length ? "" : " is-empty"}">${list}</div>`;
+      /* 自绘底层面板盖住稿面地址列表，避免滑动时 PNG 与列表叠字 */
+      return `${mask}<div class="near-addr-panel"><div class="near-addr-list${rows.length ? "" : " is-empty"}">${list}</div></div>`;
     }
 
     if (pageId === "resume") {
       const r = state.resume;
+      const relText = r.emRel || "请选择";
+      const relOn = r.emRel ? " is-filled" : "";
       let html = `
         <input class="field-input" data-rf="id" placeholder="请输入" value="${r.id}" style="left:180px;top:145px;width:176px;height:22px" />
         <input class="field-input" data-rf="name" placeholder="请输入" value="${r.name}" style="left:180px;top:255px;width:176px;height:22px" />
@@ -1902,17 +2053,30 @@
         <input class="field-input field-auto" data-rf="birthday" placeholder="根据身份证自动录入" value="${r.birthday}" style="left:160px;top:361px;width:196px;height:22px" />
         <input class="field-input" data-rf="phone" placeholder="请输入" value="${r.phone}" style="left:180px;top:415px;width:176px;height:22px" />
         <input class="field-input" data-rf="emPhone" placeholder="请输入" value="${r.emPhone}" style="left:180px;top:468px;width:176px;height:22px" />
-        <input class="field-input" data-rf="emRel" placeholder="请选择 ›" value="${r.emRel}" style="left:180px;top:521px;width:176px;height:22px" />
+        <button type="button" class="field-select${relOn}" data-act="resume-rel-open" style="left:180px;top:521px;width:176px;height:22px" aria-label="紧急联系人关系">
+          <span>${relText}</span><i aria-hidden="true"></i>
+        </button>
       `;
+      if (state.resumeRelSheet) {
+        html += actionSheetHtml({
+          title: "选择紧急联系人关系",
+          cancelAct: "resume-rel-close",
+          items: [
+            { label: "亲属", act: "resume-rel-pick", rel: "亲属" },
+            { label: "朋友", act: "resume-rel-pick", rel: "朋友" },
+            { label: "同事", act: "resume-rel-pick", rel: "同事" },
+          ],
+        });
+      }
       if (state.resumeScan) {
-        html += `<div class="action-sheet" role="dialog" aria-label="选项弹层">
-          <button type="button" class="action-sheet-mask" data-act="resume-scan-close" aria-label="关闭"></button>
-          <div class="action-sheet-panel">
-            <button type="button" class="action-sheet-item" data-act="resume-cam">拍照</button>
-            <button type="button" class="action-sheet-item" data-act="resume-scan-close">选择相册</button>
-            <button type="button" class="action-sheet-item" data-act="resume-scan-close">取消</button>
-          </div>
-        </div>`;
+        html += actionSheetHtml({
+          title: "",
+          cancelAct: "resume-scan-close",
+          items: [
+            { label: "拍照", act: "resume-cam" },
+            { label: "选择相册", act: "resume-scan-close" },
+          ],
+        });
       }
       if (state.resumeCam) {
         html += shotLayer(
@@ -1938,6 +2102,7 @@
     if (pageId === "broker") {
       /* 排序条与首页同一套 homeSortBarHtml，禁止另写样式 */
       let html = homeSortBarHtml("is-broker");
+      html += tabBarHtml("friend");
       html += authLayerHtml();
       if (state.brokerReg) {
         html += shotLayer(
@@ -1958,6 +2123,7 @@
       }
       return html;
     }
+    if (pageId === "mine") return tabBarHtml("mine");
     return "";
   }
 
@@ -2001,6 +2167,7 @@
         ) {
           state.jobKey = resolveJobKey(state.jingangCat);
         }
+        if (el.dataset.rel) state.resume.emRel = el.dataset.rel;
         if (el.dataset.act) act(el.dataset.act);
         else if (el.dataset.go) go(el.dataset.go);
       });
@@ -2216,6 +2383,7 @@
       el.addEventListener("click", (e) => {
         e.stopPropagation();
         if (el.dataset.q) state.jobQuery = el.dataset.q;
+        if (el.dataset.rel) state.resume.emRel = el.dataset.rel;
         act(el.dataset.act);
       });
     });
@@ -2274,7 +2442,7 @@
         <div class="home-list-inner">${cards}</div>
       </div>
       <div class="home-tab">
-        <img src="assets/screens/${prefix}-tab.png?v=1015j" width="375" height="84" alt="底部导航" />
+        ${tabBarHtml("find")}
         ${tabHits}
       </div>
       ${auth}
@@ -2484,15 +2652,15 @@
             : img === "search-empty.png" || img === "search-miss.png"
               ? "1015e"
               : img === "nearby-map-base.png"
-                ? "1014w"
+                ? "1017e"
                 : img === "onboard.png"
-                  ? "1016r"
+                  ? "1017g"
                   : img === "mine.png"
-                    ? "1016l"
+                    ? "1016x"
                     : img === "detail-dada-apply.png" || img === "detail-group.png"
                       ? "1016p"
                       : img === "resume-need.png"
-                        ? "1016j"
+                        ? "1017d"
                       : img === "detail-logistics.png"
                         ? "1016i"
                         : "1015z"
