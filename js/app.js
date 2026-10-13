@@ -31,7 +31,7 @@
     { id: "poster", name: "小程序推荐海报", img: "poster.png", h: 724 },
     { id: "detail-logistics", name: "职位详情-物流", img: "detail-logistics.png", h: 812, scroll: true, sticky: 102 },
     /* 集团：详情→报名渠道填写(97:29698)；达达：详情→渠道选择(121:28756)→成功 */
-    { id: "detail-group", name: "职位详情-集团", img: "job-detail.png", h: 1126, scroll: true, sticky: 102, contentEnd: 1000 },
+    { id: "detail-group", name: "职位详情-集团", img: "job-detail.png", h: 812, scroll: true, sticky: 102 },
     { id: "detail-group-apply", name: "集团报名渠道", img: "detail-group.png", h: 812, scroll: true },
     { id: "detail-dada", name: "职位详情-达达", img: "job-detail-2.png", h: 812, scroll: true, sticky: 102 },
     { id: "detail-dada-apply", name: "达达报名渠道", img: "detail-dada-apply.png", h: 812 },
@@ -1425,8 +1425,8 @@
     const pay = j.pay.match(/^(.*?)(元\/月)$/);
     const payAmount = pay ? pay[1] : j.pay;
     const payUnit = pay ? pay[2] : "";
-    const compact =
-      pageId === "job-detail-2" || pageId === "detail-logistics" || pageId === "detail-dada";
+    const showLocation = pageId === "detail-logistics";
+    const compact = !showLocation;
     const title = detailTitle(j.title);
     /* 顶部导航：2x chrome + 清晰标题/返回；meta/电话用 SVG 图标 */
     return `<div class="detail-top-chrome">
@@ -1464,8 +1464,8 @@
           <h2>任职资格</h2>
           <div class="df-copy">${quals}</div>
         </section>
-        ${compact ? "" : `<div class="df-separator"></div>
-        <img class="df-location-tail" src="assets/screens/detail-location-tail.png?v=1013s" width="375" height="258" alt="位置信息" />`}
+        ${showLocation ? `<div class="df-separator"></div>
+        <img class="df-location-tail" src="assets/screens/detail-location-tail.png?v=1013s" width="375" height="258" alt="位置信息" />` : ""}
       </div>
     </div>`;
   }
@@ -2431,7 +2431,7 @@
     }
     const sticky = page.sticky || 0;
     const dynamicDetail =
-      (page.id === "job-detail" || page.id === "detail-group") && !!JOB_DETAIL[state.jobKey];
+      (page.id === "job-detail" || page.id === "detail-logistics") && !!JOB_DETAIL[state.jobKey];
     const contentH = dynamicDetail ? 1100 : page.contentEnd || (sticky ? page.h - sticky : page.h);
     const hasSticky = !!sticky;
     const prevScroll = document.querySelector("#app-root .screen-scroll");
