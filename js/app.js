@@ -541,6 +541,7 @@
     /* 对齐稿 78:175060：贵州 / 贵阳 / 云岩区 */
     city: { p: 2, c: 1, d: 2 },
     locLabel: "全国",
+    jobLocLabel: "",
     homeSort: "latest",
     homeScrolled: false,
     locAuthed: false,
@@ -633,8 +634,23 @@
     return c.dists[state.city.d] || c.n;
   }
 
+  function locationFromCity() {
+    const province = CITY_DATA[state.city.p];
+    const city = province && (province.cities || [])[state.city.c];
+    const district = city && (city.dists || [])[state.city.d];
+    if (!city) return "";
+    if (!district || district.startsWith("全")) return city.n || province.n || "";
+    const cityName = /市$/.test(city.n) ? city.n : `${city.n}市`;
+    return `${cityName} ${district}`;
+  }
+
+  function currentJobLocation(fallback) {
+    return state.jobLocLabel || fallback || "";
+  }
+
   function confirmLocAndBack() {
     state.locLabel = currentLocLabel();
+    state.jobLocLabel = state.locLabel === "全国" ? "" : locationFromCity();
     state.locQuery = "";
     state.locSearching = false;
     state.addrSel = -1;
@@ -679,7 +695,10 @@
   }
 
   function jobMatchesFilters(job) {
-    const text = [job.title, job.site].concat(job.tags || []).join(" ");
+    const detail = JOB_DETAIL[jobKeyFor(job)];
+    const text = [job.title, job.site]
+      .concat(job.tags || [], detail ? detail.quals || [] : [])
+      .join(" ");
     const categories = selectedFullOptions("fc");
     if (categories.length && !categories.some((item) => text.includes(item))) return false;
 
@@ -705,6 +724,15 @@
     const welfare = selectedFullOptions("fw");
     if (welfare.length && !welfare.some((item) => text.includes(item))) return false;
 
+    const experience = selectedFullOptions("fe");
+    if (
+      experience.length &&
+      !experience.some((item) =>
+        item === "有经验优先" ? /经验.*优先/.test(text) : text.includes(item)
+      )
+    )
+      return false;
+
     const qualifications = selectedFullOptions("fq");
     if (
       qualifications.length &&
@@ -714,6 +742,9 @@
       })
     )
       return false;
+
+    const operations = selectedFullOptions("fo");
+    if (operations.length && !operations.some((item) => text.includes(item))) return false;
 
     const simpleSalary = {
       s1: [0, 3000],
@@ -803,6 +834,14 @@
 
   function jobCardsHtml(list, layerClass) {
     const latest = state.homeSort === "latest";
+    if (!list.length) {
+      return `<div class="job-layer ${layerClass}">
+        <div class="job-empty">
+          <img src="assets/screens/filter-empty.png?v=1016o" width="180" height="150" alt="" />
+          <p>未找到对应内容，重新筛选吧～</p>
+        </div>
+      </div>`;
+    }
     return `<div class="job-layer ${layerClass}">${list
       .map((j) => {
         const left = latest
@@ -817,7 +856,7 @@
         </div>
         <div class="job-tags">${j.tags.map((t) => `<span>${t}</span>`).join("")}</div>
         <div class="job-row3">
-          <span class="job-meta">${left}<span class="job-meta-item is-loc">${j.loc || ""}</span></span>
+          <span class="job-meta">${left}<span class="job-meta-item is-loc">${currentJobLocation(j.loc)}</span></span>
           <button type="button" class="job-apply" data-go="detail-logistics" data-job="${key}" data-job-info="${info}">去报名</button>
         </div>
       </div>`;
@@ -1016,8 +1055,12 @@
       if (state.addrSel >= 0) {
         const hit = matchAddr(state.locQuery)[state.addrSel];
         state.locLabel = hit ? hit.value.split("-").pop() : currentLocLabel();
+        const parts = hit ? hit.value.split("-") : [];
+        const city = parts.length > 1 ? parts[parts.length - 2] : "";
+        state.jobLocLabel = city ? `${city} ${state.locLabel}` : state.locLabel;
       } else {
         state.locLabel = currentLocLabel();
+        state.jobLocLabel = locationFromCity();
       }
       state.locQuery = "";
       state.locSearching = false;
@@ -1236,6 +1279,7 @@
       state.locAuthed = true;
       state.authOpen = false;
       state.locLabel = DETECTED_DISTRICT;
+      state.jobLocLabel = `北京市 ${DETECTED_DISTRICT}`;
       state.homeSort = "nearby";
       render();
       return;
@@ -1363,7 +1407,7 @@
     const base = JOB_DETAIL[key];
     if (!base) return "";
     const picked = pageId === "detail-logistics" ? state.detailJob : null;
-    const j =
+    const detail =
       picked && jobKeyFor(picked) === key
         ? Object.assign({}, base, {
             title: picked.title || base.title,
@@ -1374,6 +1418,7 @@
             hrSub: `${picked.site || base.hrSub.replace(/·招聘经理$/, "")}·招聘经理`,
           })
         : base;
+    const j = Object.assign({}, detail, { loc: currentJobLocation(detail.loc) });
     const tags = j.tags.map((t) => `<span>${t}</span>`).join("");
     const duties = j.duties.map((t, i) => `<p>${i + 1}、${t}</p>`).join("");
     const quals = j.quals.map((t, i) => `<p>${i + 1}、${t}</p>`).join("");
@@ -1848,6 +1893,7 @@
         <input class="field-input field-auto" data-rf="birthday" placeholder="根据身份证自动录入" value="${r.birthday}" style="left:160px;top:361px;width:196px;height:22px" />
         <input class="field-input" data-rf="phone" placeholder="请输入" value="${r.phone}" style="left:180px;top:415px;width:176px;height:22px" />
         <input class="field-input" data-rf="emPhone" placeholder="请输入" value="${r.emPhone}" style="left:180px;top:468px;width:176px;height:22px" />
+        <input class="field-input" data-rf="emRel" placeholder="请选择 ›" value="${r.emRel}" style="left:180px;top:521px;width:176px;height:22px" />
       `;
       if (state.resumeScan) {
         html += `<div class="action-sheet" role="dialog" aria-label="选项弹层">

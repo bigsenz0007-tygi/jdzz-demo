@@ -2011,12 +2011,12 @@ img {
   -webkit-text-fill-color: #23252b;
 }
 
-/* 未输入占位与左侧标签同为 16px */
+/* 未输入引导文案与左侧标签字号保持一致 */
 .field-input::placeholder,
 .field-input.field-auto::placeholder {
   color: #babec7;
   -webkit-text-fill-color: #babec7;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 400;
   line-height: 22px;
   opacity: 1;
@@ -2127,6 +2127,29 @@ img {
   background: #f6f6f6;
   padding: 0 10px 24px;
   margin-top: -1px;
+}
+
+.job-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 355px;
+  min-height: 500px;
+  padding-top: 118px;
+  background: #f6f6f6;
+  text-align: center;
+}
+
+.job-empty img {
+  width: 180px;
+  height: 150px;
+}
+
+.job-empty p {
+  margin-top: 16px;
+  color: #868d9f;
+  font-size: 14px;
+  line-height: 22px;
 }
 
 .jg-cards .job-card,
@@ -2539,12 +2562,12 @@ img {
 
 .ap-back {
   position: absolute;
-  left: 10px;
-  top: 12px;
+  left: 0;
+  top: 0;
   z-index: 1;
-  width: 20px;
-  height: 20px;
-  background: url("../assets/progress/back.svg") center / 20px 20px no-repeat;
+  width: 44px;
+  height: 44px;
+  background: url("../assets/progress/back.svg") center / 10px 18px no-repeat;
 }
 
 .ap-mini {
