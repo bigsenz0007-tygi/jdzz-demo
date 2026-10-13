@@ -148,6 +148,35 @@ img {
   -webkit-font-smoothing: subpixel-antialiased;
 }
 
+/* 手机预览：只展示原型主体，不显示桌面端页面切换控件 */
+@media (max-width: 767px) {
+  html,
+  body {
+    width: 100%;
+    min-height: 100%;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  .hub {
+    min-height: 812px;
+    padding: 0;
+    align-items: flex-start;
+  }
+
+  .hub-sidebar {
+    display: none;
+  }
+
+  .hub-stage {
+    width: 100%;
+  }
+
+  .phone-shell {
+    box-shadow: none;
+  }
+}
+
 #app-root {
   position: relative;
   width: 375px;
