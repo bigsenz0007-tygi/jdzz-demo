@@ -2824,7 +2824,7 @@ img {
   background: url("../assets/icons/icon-chevron-down.svg?v=1016e") center / 16px 16px no-repeat;
 }
 
-/* 对齐 Figma 78:175060：当前位置条 top=132 / h=48，图标+文案居中 */
+/* 对齐 Figma 78:175060：当前位置条 top=132 / h=48，图标+文案左对齐 */
 .loc-current {
   position: absolute;
   left: 0;
@@ -2834,7 +2834,7 @@ img {
   height: 48px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 2px;
   padding: 8px 12px 12px;
   box-sizing: border-box;
