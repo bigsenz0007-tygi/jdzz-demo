@@ -2118,11 +2118,11 @@ img {
   color: transparent;
 }
 
-/* 修改定位：不透明面板盖住稿面列表区，内部单独滚动，消除叠字 */
+/* 修改定位 78:176301：底层面板盖住稿面列表，内部滚动 */
 .near-addr-panel {
   position: absolute;
   left: 0;
-  top: 340px;
+  top: 365px;
   bottom: 106px;
   width: 375px;
   z-index: 8;
@@ -2135,6 +2135,13 @@ img {
   isolation: isolate;
 }
 
+.near-addr-handle {
+  flex: none;
+  width: 375px;
+  height: 24px;
+  background: url("../assets/icons/icon-unfold.svg?v=1018f") center / 22px 8px no-repeat;
+}
+
 .near-addr-list {
   position: relative;
   left: auto;
@@ -2144,52 +2151,86 @@ img {
   height: auto;
   min-height: 0;
   z-index: 1;
-  padding: 34px 9px 12px;
+  padding: 0 9px 20px;
   box-sizing: border-box;
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
   background: #f6f6f6;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
 }
 
 .near-addr-item {
+  flex: none;
+  flex-shrink: 0;
   width: 100%;
   min-height: 74px;
-  padding: 11px;
-  margin-bottom: 12px;
+  padding: 12px;
+  margin: 0;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  justify-content: center;
   gap: 4px;
   text-align: left;
   background: #fff;
   border: 1px solid transparent;
   border-radius: 8px;
   position: relative;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .near-addr-item .t {
+  display: block;
+  width: 100%;
+  flex: none;
+  font-family: "PingFangSC-Semibold", "PingFang SC", "Hiragino Sans GB", sans-serif;
   font-size: 16px;
+  font-weight: 600;
+  font-synthesis: weight;
   line-height: 24px;
   color: #23252b;
-  font-weight: 500;
-  padding-right: 48px;
+  text-align: left;
+  word-break: break-all;
+}
+
+.near-addr-item .meta {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
 }
 
 .near-addr-item .s {
-  font-size: 13px;
-  line-height: 20px;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22px;
   color: #868d9f;
-  padding-right: 48px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .near-addr-item .d {
-  position: absolute;
-  right: 12px;
-  top: 14px;
-  font-size: 13px;
+  position: static;
+  flex: none;
+  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22px;
   color: #868d9f;
+  white-space: nowrap;
 }
 
 .near-addr-item.on .t {
@@ -2200,39 +2241,87 @@ img {
   border-color: #fc3737;
 }
 
+/* 选中：右上角红底勾选角标 */
 .near-addr-item.on::after {
   content: "";
   position: absolute;
-  right: 12px;
-  bottom: 16px;
-  width: 18px;
-  height: 18px;
+  right: 0;
+  top: 0;
+  width: 16px;
+  height: 16px;
+  background: #fc3737
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'><path d='M3.5 8.2L6.4 11.1L12.5 4.7' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>")
+    center / 12px 12px no-repeat;
+  border-radius: 0 7px 0 4px;
+  -webkit-mask: none;
+  mask: none;
+}
+
+.near-loc-foot {
+  position: absolute;
+  left: 0;
+  top: 706px;
+  bottom: 0;
+  z-index: 10;
+  width: 375px;
+  box-sizing: border-box;
+  padding: 12px 12px 34px;
+  background: #fff;
+  box-shadow: 0 -6px 10px rgba(0, 0, 0, 0.05);
+}
+
+.near-loc-ok {
+  display: block;
+  width: 100%;
+  height: 48px;
+  border: 0;
+  border-radius: 8px;
   background: #fc3737;
-  mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path fill='white' d='M7.8 14.2L3.6 10l1.4-1.4 2.8 2.8 7-7L16.2 6z'/></svg>") center / contain no-repeat;
-  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path fill='white' d='M7.8 14.2L3.6 10l1.4-1.4 2.8 2.8 7-7L16.2 6z'/></svg>") center / contain no-repeat;
+  color: #fff;
+  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 48px;
+  text-align: center;
 }
 
 .near-addr-list.is-empty {
   background: #fff;
-  display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
+  padding: 24px 16px;
   overflow: hidden;
+  gap: 0;
 }
 
 .near-addr-empty {
   width: 100%;
-  height: 100%;
   min-height: 220px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 16px;
   background: #fff;
-  color: #868d9f;
-  font-size: 14px;
-  line-height: 22px;
   text-align: center;
+  pointer-events: none;
+}
+
+.near-addr-empty img {
+  display: block;
+  width: 180px;
+  height: 150px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.near-addr-empty p {
+  margin: 0;
+  color: #868d9f;
+  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22px;
 }
 
 .pick-value {
@@ -2429,25 +2518,95 @@ img {
   overflow: visible;
 }
 
+/* 搜索页：盖住切图底部 Tab，本页无底栏按钮 */
+.search-no-tab {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  height: 84px;
+  background: #ffffff;
+  pointer-events: none;
+}
+
+/* 对齐 Figma 78:175350：搜索条底(126) → 历史区 top=132、内边距 12 */
 .hist-plate {
   position: absolute;
   left: 0;
-  top: 184px;
+  top: 132px;
   z-index: 7;
   width: 375px;
-  height: 240px;
+  min-height: 240px;
+  padding: 12px 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
   background: #fff;
 }
 
 .hist-plate.is-empty {
-  top: 148px;
-  height: 300px;
+  min-height: 120px;
+}
+
+.hist-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 343px;
+  height: 16px;
+}
+
+.hist-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #23252b;
+  font-family: "PingFangSC-Medium", "PingFang SC", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.hist-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #868d9f;
+  font-family: "PingFang SC", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.hist-ico {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 16px 16px;
+}
+
+.hist-ico.time {
+  background-image: url("../assets/icons/icon-time-outline.svg?v=1018g");
+}
+
+.hist-ico.del {
+  background-image: url("../assets/icons/icon-delete-outline.svg?v=1018g");
 }
 
 .hist-chips {
-  position: absolute;
-  left: 16px;
-  top: 192px;
+  position: static;
+  left: auto;
+  top: auto;
   z-index: 8;
   display: flex;
   flex-wrap: wrap;
@@ -2457,13 +2616,14 @@ img {
 
 .hist-chip {
   height: 32px;
-  padding: 0 12px;
+  padding: 5px 12px;
   border-radius: 8px;
   background: #f5f5f6;
   color: #23252b;
   font-size: 14px;
-  line-height: 32px;
+  line-height: 22px;
   font-weight: 400;
+  box-sizing: border-box;
 }
 
 .job-head {
@@ -2620,16 +2780,21 @@ img {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  min-width: 36px;
+  min-width: 48px;
   height: 24px;
-  padding: 0 12px 0 0;
+  padding: 0 14px 0 0;
   font-size: 16px;
   font-weight: 600;
   line-height: 24px;
   color: #232930;
-  /* 与稿面顶栏同色，盖住底图自带箭头，避免双箭头 */
+  /* 与稿面顶栏同色，盖住底图「北京」与箭头 */
   background: #feefec;
   pointer-events: none;
+}
+
+/* 上滑吸顶顶栏为白底 */
+.loc-chip.is-pin {
+  background: #ffffff;
 }
 
 .jg-loc-chip {
@@ -2659,24 +2824,24 @@ img {
   background: url("../assets/icons/icon-chevron-down.svg?v=1016e") center / 16px 16px no-repeat;
 }
 
-/* 盖住切图左对齐行，整行「当前位置：xxx」横向居中 */
+/* 对齐 Figma 78:175060：当前位置条 top=132 / h=48，图标+文案居中 */
 .loc-current {
   position: absolute;
   left: 0;
   right: 0;
-  top: 140px;
-  z-index: 9;
-  height: 32px;
+  top: 132px;
+  z-index: 13;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 0 16px;
+  gap: 2px;
+  padding: 8px 12px 12px;
   box-sizing: border-box;
   font-family: "PingFang SC", "PingFangSC-Regular", sans-serif;
   font-size: 16px;
   font-weight: 400;
-  line-height: 22px;
+  line-height: 24px;
   color: #232930;
   background: #ffffff;
   pointer-events: none;
@@ -2687,7 +2852,7 @@ img {
   flex: none;
   width: 16px;
   height: 16px;
-  background: url("../assets/icons/icon-pin.svg?v=1016e") center / 14px 14px no-repeat;
+  background: url("../assets/icons/icon-loc-current.svg?v=1018l") center / 16px 16px no-repeat;
 }
 
 .application-progress {
@@ -3180,7 +3345,8 @@ img {
   z-index: 5;
   width: 375px;
   height: 39px;
-  background: #fff;
+  /* 与页面灰底一致，不要单独白块 */
+  background: #f6f6f6;
 }
 
 .ap-home-indicator::after {
@@ -3282,7 +3448,7 @@ img {
   text-align: center;
 }
 
-/* 简历：紧急联系人关系选择器 */
+/* 简历：紧急联系人关系选择器（未选不重画切图文案，避免叠字） */
 .field-select {
   position: absolute;
   z-index: 6;
@@ -3302,7 +3468,14 @@ img {
   text-align: right;
 }
 
+.field-select.is-placeholder {
+  background: transparent;
+  color: transparent;
+}
+
 .field-select.is-filled {
+  padding-left: 8px;
+  background: #ffffff;
   color: #23252b;
 }
 

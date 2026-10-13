@@ -448,12 +448,10 @@
     ],
     "nearby-loc": [
       { l: 8, t: 48, w: 44, h: 40, go: "back", title: "关闭" },
-      { l: 12, t: 718, w: 350, h: 48, act: "near-loc-ok", title: "确定" },
     ],
     search: [
       { l: 0, t: 44, w: 56, h: 44, act: "search-cancel", title: "返回" },
-      { l: 311, t: 160, w: 48, h: 20, act: "job-clear-history", title: "清空" },
-      ...TAB,
+      /* 搜索页无底部 Tab；清空由 .hist-clear 承接 */
     ],
     "search-miss": [
       { l: 0, t: 44, w: 56, h: 44, act: "search-cancel", title: "返回" },
@@ -535,8 +533,8 @@
     locQuery: "",
     locSearching: false,
     addrSel: -1,
-    /* 默认：北京 / 北京市 / 朝阳区（与 DETECTED_DISTRICT 一致） */
-    city: { p: 6, c: 1, d: 0 },
+    /* 默认全国：首页左上角「全国」，进定位页选中「全国」+ 空右侧 */
+    city: { p: 0, c: 0, d: 0 },
     locLabel: "全国",
     jobLocLabel: "",
     homeSort: "latest",
@@ -598,12 +596,12 @@
 
   const LOC_PAGES = { location: 1, "loc-focus": 1, "address-search": 1, "search-empty": 1 };
   const NEAR_PAGES = { nearby: 1, "nearby-time": 1, "nearby-empty": 1 };
+  /* 对齐 Figma 78:176301 地址卡片文案 */
   const NEAR_ADDR = [
-    { title: "北京亦庄经济技术开发区科创十一街京东大厦4号楼2号门", sub: "北京市通州区经海路京东总部北京2号楼B座", dist: "20m" },
-    { title: "北京亦庄经济技术开发区科创十一街京东总部2号楼", sub: "北京市通州区经海路京东总部北京2号楼B座", dist: "28m" },
-    { title: "北京市京东大厦4号楼2号门", sub: "北京市通州区经海路京东总部北京2号楼B座", dist: "29m" },
-    { title: "北京市北京京东大厦4号楼2号门", sub: "北京市通州区经海路京东总部北京2号楼B座", dist: "30m" },
-    { title: "京东集团全球总部", sub: "北京市通州区科创十一街18号院", dist: "50m" },
+    { title: "北京亦庄经济技术开发区科创十一街京东大厦4号楼2号门", sub: "北京市通州区经海路京东总部北京2号楼B座...", dist: "20m" },
+    { title: "北京亦庄经济技术开发区科创十一街京", sub: "北京市通州区经海路京东总部北京2号楼B座...", dist: "28m" },
+    { title: "北京亦庄京东大厦4号楼2号门", sub: "北京市通州区经海路京东总部北京2号楼B座...", dist: "29m" },
+    { title: "北京亦庄京东大厦4号楼2号门", sub: "北京市通州区经海路京东总部北京2号楼B座...", dist: "29m" },
   ];
 
   function nearbyVisual() {
@@ -1418,11 +1416,20 @@
 
   function historyHtml() {
     const items = state.jobSearches || [];
-    if (!items.length) return `<div class="hist-plate is-empty"></div>`;
+    /* 对齐 Figma 78:175350：搜索框下 12px 起历史区（整体 top=132） */
+    const head = `<div class="hist-head">
+      <div class="hist-title"><i class="hist-ico time" aria-hidden="true"></i><span>历史搜索</span></div>
+      <button type="button" class="hist-clear" data-act="job-clear-history" aria-label="清空">
+        <i class="hist-ico del" aria-hidden="true"></i><span>清空</span>
+      </button>
+    </div>`;
+    if (!items.length) {
+      return `<div class="hist-plate is-empty">${head}</div>`;
+    }
     const chips = items
       .map((q) => `<button type="button" class="hist-chip" data-act="job-chip" data-q="${escHtml(q)}">${escHtml(q)}</button>`)
       .join("");
-    return `<div class="hist-plate"></div><div class="hist-chips">${chips}</div>`;
+    return `<div class="hist-plate">${head}<div class="hist-chips">${chips}</div></div>`;
   }
 
   function searchMask(opts) {
@@ -1898,8 +1905,10 @@
         showClear: !!state.jobQuery,
         active: true,
       });
-      if (pageId !== "search") return mask;
-      return mask + historyHtml();
+      /* 搜索页底部无 Tab，盖住切图底栏 */
+      const noTab = `<div class="search-no-tab" aria-hidden="true"></div>`;
+      if (pageId !== "search") return mask + noTab;
+      return mask + historyHtml() + noTab;
     }
 
     if (pageId === "jingang") {
@@ -1908,10 +1917,9 @@
     }
 
     if (pageId === "home") {
-      /* 始终与定位页「当前位置」同一文案 */
+      /* 盖住切图「北京」，默认展示全国（与定位页当前位置一致） */
       const label = state.locLabel || "全国";
-      if (label === "全国") return "";
-      return `<div class="loc-chip">${label}<i class="loc-chip-arrow" aria-hidden="true"></i></div>`;
+      return `<div class="loc-chip">${escHtml(label)}<i class="loc-chip-arrow" aria-hidden="true"></i></div>`;
     }
 
     if (pageId === "filter-salary" || pageId === "filter-result") {
@@ -2030,21 +2038,33 @@
         ? rows
             .map(
               (item) => `<button type="button" class="near-addr-item ${item.index === state.nearAddrSel ? "on" : ""}" data-naddr="${item.index}">
-                <span class="t">${item.title}</span>
-                <span class="s">${item.sub}</span>
-                <span class="d">${item.dist}</span>
+                <span class="t">${escHtml(item.title)}</span>
+                <span class="meta"><span class="s">${escHtml(item.sub)}</span><span class="d">${escHtml(item.dist)}</span></span>
               </button>`
             )
             .join("")
-        : `<div class="near-addr-empty"><span>未找到相关位置</span></div>`;
-      /* 自绘底层面板盖住稿面地址列表，避免滑动时 PNG 与列表叠字 */
-      return `${mask}<div class="near-addr-panel"><div class="near-addr-list${rows.length ? "" : " is-empty"}">${list}</div></div>`;
+        : `<div class="near-addr-empty">
+            <img src="assets/screens/filter-empty.png?v=1016o" width="180" height="150" alt="" />
+            <p>未找到相关位置</p>
+          </div>`;
+      /* 对齐 Figma 78:176301：把手 + 卡片列表 + 底栏确定 */
+      return `${mask}<div class="near-addr-panel">
+        <div class="near-addr-handle" aria-hidden="true"></div>
+        <div class="near-addr-list${rows.length ? "" : " is-empty"}">${list}</div>
+      </div>
+      <div class="near-loc-foot">
+        <button type="button" class="near-loc-ok" data-act="near-loc-ok">确定</button>
+      </div>`;
     }
 
     if (pageId === "resume") {
       const r = state.resume;
-      const relText = r.emRel || "请选择";
-      const relOn = r.emRel ? " is-filled" : "";
+      /* 未选：只用热区，保留切图「请选择」避免叠字；已选：白底盖住切图再画文案 */
+      const relFilled = !!r.emRel;
+      const relOn = relFilled ? " is-filled" : " is-placeholder";
+      const relInner = relFilled
+        ? `<span>${escHtml(r.emRel)}</span><i aria-hidden="true"></i>`
+        : "";
       let html = `
         <input class="field-input" data-rf="id" placeholder="请输入" value="${r.id}" style="left:180px;top:145px;width:176px;height:22px" />
         <input class="field-input" data-rf="name" placeholder="请输入" value="${r.name}" style="left:180px;top:255px;width:176px;height:22px" />
@@ -2053,7 +2073,7 @@
         <input class="field-input" data-rf="phone" placeholder="请输入" value="${r.phone}" style="left:180px;top:415px;width:176px;height:22px" />
         <input class="field-input" data-rf="emPhone" placeholder="请输入" value="${r.emPhone}" style="left:180px;top:468px;width:176px;height:22px" />
         <button type="button" class="field-select${relOn}" data-act="resume-rel-open" style="left:180px;top:521px;width:176px;height:22px" aria-label="紧急联系人关系">
-          <span>${relText}</span><i aria-hidden="true"></i>
+          ${relInner}
         </button>
       `;
       if (state.resumeRelSheet) {
@@ -2428,6 +2448,7 @@
     return `<div class="home-shell${scrolled}">
       <div class="home-pin" id="home-pin">
         <img src="assets/screens/${pinPrefix}-top.png?v=1015j" width="375" height="192" alt="首页上滑顶栏" />
+        <div class="loc-chip is-pin">${escHtml(state.locLabel || "全国")}<i class="loc-chip-arrow" aria-hidden="true"></i></div>
         ${pinHits}
         ${homeSortBarHtml("is-pin")}
       </div>
@@ -2628,12 +2649,7 @@
               page.id === "filter-full" ? `确定（已选${fullFilterCount()}）` : ""
             }</button>
           </div>`
-        : page.id === "nearby-loc"
-          ? `<div class="filter-sticky nearloc">
-            <button type="button" class="filter-reset" data-act="near-loc-reset" title="重置" aria-label="重置"></button>
-            <button type="button" class="filter-ok" data-act="near-loc-ok" title="确定" aria-label="确定"></button>
-          </div>`
-          : "";
+        : "";
     const isDetail =
       page.id === "job-detail" ||
       page.id === "job-detail-2" ||
@@ -2662,6 +2678,10 @@
                         ? "1017d"
                       : img === "detail-logistics.png"
                         ? "1016i"
+                        : img === "detail-loc.png"
+                          ? "1018i"
+                        : img === "search.png"
+                          ? "1018g"
                         : "1015z"
         }" width="375" height="${contentH}" alt="${page.name}" decoding="sync" style="height:${contentH}px;object-fit:cover;object-position:top" />`
       : "";
